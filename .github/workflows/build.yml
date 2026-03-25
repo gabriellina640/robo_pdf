@@ -1,13 +1,16 @@
 name: Gerar Executavel Windows
 
-# O script vai rodar toda vez que você fizer um push na branch 'main'
 on:
   push:
     branches: [ "main" ]
 
+# Força o uso da versão mais atual e segura do Node.js (resolve o aviso amarelo)
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
+
 jobs:
   build:
-    runs-on: windows-latest # Pede ao GitHub para usar um servidor Windows
+    runs-on: windows-latest
 
     steps:
     - name: Baixar o código do repositório
@@ -16,7 +19,7 @@ jobs:
     - name: Configurar o Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11' # Versão bem estável para o PyInstaller
+        python-version: '3.11' 
 
     - name: Instalar dependências e o PyInstaller
       run: |
@@ -24,15 +27,14 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
-    - name: Compilar o executável (.exe) com Ícone
-      # O --noconsole esconde a tela preta do terminal
-      # O --onefile junta tudo num arquivo só
-      # O --icon="icon.ico" embute a imagem no executável final
+    - name: Compilar o executável (.exe)
+      # Aqui está o seu novo nome: Robo_PDF. Lembre-se de ter o icon.ico no repositório!
       run: |
         pyinstaller --noconsole --onefile --icon="icon.ico" --name "Robo_PDF" app.py
 
     - name: Disponibilizar o arquivo para download
       uses: actions/upload-artifact@v4
       with:
-        name: MPAC_Utilitario_PDF_Final
-        path: dist/MPAC_Utilitario_PDF.exe
+        name: Robo_PDF_Final
+        # Aqui consertamos o caminho para ele procurar o arquivo com o nome certo:
+        path: dist/Robo_PDF.exe
