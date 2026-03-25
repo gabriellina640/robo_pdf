@@ -14,6 +14,10 @@ class AppPDFCompleto:
         self.root = root
         self.root.title("15º Promotoria Criminal - Ferramenta Avançada de PDF")
         self.root.geometry("750x800")
+        try:
+            self.root.iconbitmap("icon.ico")
+        except:
+            pass
         
         self.root.configure(fg_color="#f1f5f9") 
 
