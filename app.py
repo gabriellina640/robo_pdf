@@ -12,7 +12,7 @@ ctk.set_default_color_theme("blue")
 class AppPDFCompleto:
     def __init__(self, root):
         self.root = root
-        self.root.title("15º Promotoria Criminal - Ferramenta Avançada de PDF")
+        self.root.title("Ferramenta Avançada de PDF")
         self.root.geometry("750x800")
         try:
             self.root.iconbitmap("icon.ico")
