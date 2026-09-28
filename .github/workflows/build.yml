@@ -1,12 +1,16 @@
 name: Gerar Executavel Windows
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
 
-# Força o uso da versão mais atual e segura do Node.js (resolve o aviso amarelo)
+permissions:
+  contents: write
+
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -14,12 +18,13 @@ jobs:
 
     steps:
     - name: Baixar o código do repositório
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Configurar o Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
-        python-version: '3.11' 
+        python-version: '3.11'
+        cache: 'pip'
 
     - name: Instalar dependências e o PyInstaller
       run: |
@@ -27,14 +32,51 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
+    - name: Validar código antes de compilar
+      run: python -m py_compile app.py
+
     - name: Compilar o executável (.exe)
-      # Aqui está o seu novo nome: Robo_PDF. Lembre-se de ter o icon.ico no repositório!
       run: |
-        pyinstaller --noconsole --onefile --icon="icon.ico" --name "Robo_PDF" app.py
+        $ctkPath = python -c "import customtkinter, pathlib; print(pathlib.Path(customtkinter.__file__).parent)"
+        pyinstaller --noconfirm --clean --noconsole --onefile --icon "icon.ico" --name "Robo_PDF" --add-data "$ctkPath;customtkinter" app.py
+
+    - name: Conferir executável gerado
+      run: |
+        if (!(Test-Path "dist/Robo_PDF.exe")) {
+          throw "O executável dist/Robo_PDF.exe não foi gerado."
+        }
+        Get-Item "dist/Robo_PDF.exe" | Format-List Name,Length,FullName
+
+    - name: Gerar checksum SHA256
+      run: |
+        $hash = Get-FileHash "dist/Robo_PDF.exe" -Algorithm SHA256
+        "$($hash.Hash)  Robo_PDF.exe" | Out-File -FilePath "dist/checksums.txt" -Encoding utf8
 
     - name: Disponibilizar o arquivo para download
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
-        name: Robo_PDF_Final
-        # Aqui consertamos o caminho para ele procurar o arquivo com o nome certo:
         path: dist/Robo_PDF.exe
+        archive: false
+        if-no-files-found: error
+        retention-days: 30
+
+    - name: Disponibilizar checksum para conferência
+      uses: actions/upload-artifact@v7
+      with:
+        path: dist/checksums.txt
+        archive: false
+        if-no-files-found: error
+        retention-days: 30
+
+    - name: Publicar no GitHub Releases quando criar tag v*
+      if: startsWith(github.ref, 'refs/tags/v')
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        $tag = "${{ github.ref_name }}"
+        gh release view $tag *> $null
+        if ($LASTEXITCODE -eq 0) {
+          gh release upload $tag "dist/Robo_PDF.exe" "dist/checksums.txt" --clobber
+        } else {
+          gh release create $tag "dist/Robo_PDF.exe" "dist/checksums.txt" --title $tag --notes "Build automático do Robo PDF para Windows." --latest
+        }

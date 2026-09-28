@@ -1,2 +1,2 @@
-pypdf
-customtkinter
+pypdf==6.11.0
+customtkinter==5.2.2
